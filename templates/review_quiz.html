@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Review Quiz - {{ attempt.quiz.title }}{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 12px;">📋 Review: {{ attempt.quiz.title }}</h2>
+
+<div style="background: #f7fafc; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-around; text-align: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <p style="font-size: 12px; color: #808080; margin-bottom: 4px;">Questions</p>
+            <p style="font-size: 28px; font-weight: bold; color: #2d3748;">{{ total_questions }}</p>
+        </div>
+        <div>
+            <p style="font-size: 12px; color: #808080; margin-bottom: 4px;">Correct</p>
+            <p style="font-size: 28px; font-weight: bold; color: #2a2a2a;">{{ correct_answers }}</p>
+        </div>
+        <div>
+            <p style="font-size: 12px; color: #808080; margin-bottom: 4px;">Score</p>
+            <p style="font-size: 28px; font-weight: bold; color: #000000;">
+                {% if total_questions > 0 %}
+                    {{ "%.0f"|format((correct_answers / total_questions) * 100) }}%
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <p style="text-align: center; color: #808080; margin-top: 12px; font-size: 13px;">
+        {{ attempt.completed_at.strftime('%B %d, %Y at %I:%M %p') }}
+    </p>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h3 style="margin-bottom: 4px; font-size: 18px;">Question Summary</h3>
+            <p style="color: #808080; font-size: 13px; margin: 0;">Click on any question to view details</p>
+        </div>
+        
+        <!-- Filter buttons -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button onclick="filterQuestions('all')" id="filter-all" class="filter-btn active" style="padding: 6px 12px; border: 2px solid #000000; background: #000000; color: white; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                All ({{ total_questions }})
+            </button>
+            <button onclick="filterQuestions('correct')" id="filter-correct" class="filter-btn" style="padding: 6px 12px; border: 2px solid #2a2a2a; background: white; color: #2a2a2a; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                ✓ Correct ({{ correct_answers }})
+            </button>
+            <button onclick="filterQuestions('wrong')" id="filter-wrong" class="filter-btn" style="padding: 6px 12px; border: 2px solid #4a4a4a; background: white; color: #4a4a4a; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                ✗ Wrong ({{ wrong_answers }})
+            </button>
+            <button onclick="filterQuestions('unanswered')" id="filter-unanswered" class="filter-btn" style="padding: 6px 12px; border: 2px solid #666666; background: white; color: #666666; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                Unanswered ({{ unanswered_count }})
+            </button>
+            <button onclick="filterQuestions('practice')" id="filter-practice" class="filter-btn" style="padding: 6px 12px; border: 2px solid #808080; background: white; color: #808080; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                Practice ({{ practice_count }})
+            </button>
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f7fafc; border-bottom: 2px solid #e2e8f0;">
+                    <th style="padding: 12px; text-align: left; font-size: 14px; color: #2d3748; width: 60px;">#</th>
+                    <th style="padding: 12px; text-align: center; font-size: 14px; color: #2d3748; width: 100px;">Status</th>
+                    <th style="padding: 12px; text-align: left; font-size: 14px; color: #2d3748;">Result</th>
+                    <th style="padding: 12px; text-align: center; font-size: 14px; color: #2d3748; width: 120px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in question_results %}
+                <tr class="question-row" 
+                    data-status="{% if result.is_practice %}practice{% elif result.is_correct == True %}correct{% elif result.is_correct == False %}wrong{% else %}unanswered{% endif %}"
+                    style="border-bottom: 1px solid #e2e8f0; {% if loop.index % 2 == 0 %}background: #fafafa;{% endif %}">
+                    <td style="padding: 12px; font-weight: 600; color: #000000; font-size: 16px;">
+                        {{ result.number }}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        {% if result.is_practice %}
+                            <span style="display: inline-block; padding: 4px 12px; background: #e0e0e0; color: #3a3a3a; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                Practice
+                            </span>
+                        {% elif result.is_correct == True %}
+                            <span style="display: inline-block; padding: 4px 12px; background: #f0f0f0; color: #1a1a1a; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                ✓ Correct
+                            </span>
+                        {% elif result.is_correct == False %}
+                            <span style="display: inline-block; padding: 4px 12px; background: #d0d0d0; color: #2a2a2a; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                ✗ Wrong
+                            </span>
+                        {% else %}
+                            <span style="display: inline-block; padding: 4px 12px; background: #e8e8e8; color: #3a3a3a; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                Unanswered
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; color: #4a5568; font-size: 14px;">
+                        {% if result.is_practice %}
+                            Practice question - no grading
+                        {% elif result.has_answer %}
+                            {% if result.is_correct == True %}
+                                Your answer is correct
+                            {% elif result.is_correct == False %}
+                                Your answer is incorrect
+                            {% else %}
+                                Answered (no correct answer stored)
+                            {% endif %}
+                        {% else %}
+                            No answer provided
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <a href="{{ url_for('review_question', attempt_id=attempt.id, question_number=result.number) }}" 
+                           class="btn btn-primary" style="font-size: 13px; padding: 6px 16px;">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 24px;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
+        ← Dashboard
+    </a>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    table {
+        font-size: 12px;
+    }
+    td, th {
+        padding: 8px !important;
+    }
+    .btn {
+        font-size: 11px !important;
+        padding: 4px 10px !important;
+    }
+    .filter-btn {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+    }
+}
+
+.filter-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.filter-btn.active {
+    background: currentColor !important;
+    color: white !important;
+}
+
+.question-row {
+    transition: opacity 0.2s;
+}
+
+.question-row.hidden {
+    display: none;
+}
+</style>
+
+<script>
+let currentFilter = 'all';
+
+function filterQuestions(filter) {
+    currentFilter = filter;
+    const rows = document.querySelectorAll('.question-row');
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    // Update button states
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (filter === 'all') {
+            btn.style.background = 'white';
+            btn.style.color = btn.id.includes('correct') ? '#2a2a2a' : 
+                             btn.id.includes('wrong') ? '#4a4a4a' : 
+                             btn.id.includes('unanswered') ? '#666666' :
+                             btn.id.includes('practice') ? '#808080' : '#000000';
+        } else {
+            btn.style.background = 'white';
+            btn.style.color = btn.id.includes('correct') ? '#2a2a2a' : 
+                             btn.id.includes('wrong') ? '#4a4a4a' : 
+                             btn.id.includes('unanswered') ? '#666666' :
+                             btn.id.includes('practice') ? '#808080' : '#000000';
+        }
+    });
+    
+    const activeBtn = document.getElementById('filter-' + filter);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        if (filter === 'all') {
+            activeBtn.style.background = '#000000';
+            activeBtn.style.color = 'white';
+        } else if (filter === 'correct') {
+            activeBtn.style.background = '#2a2a2a';
+            activeBtn.style.color = 'white';
+        } else if (filter === 'wrong') {
+            activeBtn.style.background = '#4a4a4a';
+            activeBtn.style.color = 'white';
+        } else if (filter === 'unanswered') {
+            activeBtn.style.background = '#666666';
+            activeBtn.style.color = 'white';
+        } else if (filter === 'practice') {
+            activeBtn.style.background = '#808080';
+            activeBtn.style.color = 'white';
+        }
+    }
+    
+    // Filter rows
+    rows.forEach(row => {
+        const status = row.dataset.status;
+        if (filter === 'all' || status === filter) {
+            row.classList.remove('hidden');
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+}
+</script>
+{% endblock %}

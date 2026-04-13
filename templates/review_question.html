@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Question {{ question_number }} Review - {{ attempt.quiz.title }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+    <a href="{{ url_for('review_quiz', attempt_id=attempt.id) }}" style="color: #000000; text-decoration: none; font-size: 14px;">
+        ← Back to Summary
+    </a>
+    <h2 style="margin-top: 8px; margin-bottom: 8px;">📋 {{ attempt.quiz.title }}</h2>
+    <p style="color: #808080; font-size: 14px;">Question {{ question_number }} of {{ total_questions }}</p>
+</div>
+
+<!-- Progress indicator -->
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+    <div style="flex: 1; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+        <div style="background: #000000; height: 100%; width: {{ (question_number / total_questions) * 100 }}%;"></div>
+    </div>
+    <span style="font-weight: 600; color: #000000; min-width: 70px; text-align: right; font-size: 14px;">
+        {{ question_number }} / {{ total_questions }}
+    </span>
+</div>
+
+<div class="card">
+    <div style="display: flex; gap: 12px; align-items: start;">
+        <div style="flex-shrink: 0; width: 50px; height: 50px; 
+                    {% if is_correct == True %}
+                        background: #2a2a2a;
+                    {% elif is_correct == False %}
+                        background: #4a4a4a;
+                    {% else %}
+                        background: #808080;
+                    {% endif %}
+                    color: white; border-radius: 8px; display: flex; align-items: center; 
+                    justify-content: center; font-size: 20px; font-weight: bold;">
+            {{ question_number }}
+        </div>
+        <div style="flex: 1; min-width: 0;">
+            <div style="margin-bottom: 12px;">
+                {% if is_correct == True %}
+                    <span style="display: inline-block; padding: 6px 16px; background: #f0f0f0; color: #1a1a1a; border-radius: 12px; font-size: 14px; font-weight: 600;">
+                        ✓ Correct
+                    </span>
+                {% elif is_correct == False %}
+                    <span style="display: inline-block; padding: 6px 16px; background: #d0d0d0; color: #2a2a2a; border-radius: 12px; font-size: 14px; font-weight: 600;">
+                        ✗ Incorrect
+                    </span>
+                {% elif not question.correct_answer %}
+                    <span style="display: inline-block; padding: 6px 16px; background: #e0e0e0; color: #3a3a3a; border-radius: 12px; font-size: 14px; font-weight: 600;">
+                        Practice Question
+                    </span>
+                {% else %}
+                    <span style="display: inline-block; padding: 6px 16px; background: #e8e8e8; color: #3a3a3a; border-radius: 12px; font-size: 14px; font-weight: 600;">
+                        Unanswered
+                    </span>
+                {% endif %}
+            </div>
+            
+            <img src="{{ url_for('static', filename='uploads/' + question.image_path) }}" 
+                 alt="Question {{ question_number }}"
+                 style="max-width: 100%; max-height: 500px; object-fit: contain; border-radius: 6px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
+            
+            <!-- User's Answer -->
+            <div style="background: #edf2f7; padding: 16px; border-radius: 6px; margin-bottom: 12px;">
+                <p style="font-weight: 600; color: #2d3748; margin-bottom: 8px; font-size: 14px;">Your Answer:</p>
+                <p style="color: #4a5568; font-size: 15px; line-height: 1.6;">
+                    {% if answer and answer.user_answer %}
+                        {{ answer.user_answer }}
+                    {% else %}
+                        <em style="color: #a0aec0;">No answer provided</em>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <!-- Correct Answer (if available) -->
+            {% if question.correct_answer %}
+            <div style="background: #f0f0f0; padding: 16px; border-radius: 6px; border: 1px solid #b0b0b0;">
+                <p style="font-weight: 600; color: #1a1a1a; margin-bottom: 8px; font-size: 14px;">✓ Correct Answer:</p>
+                <p style="color: #2a2a2a; font-size: 15px; line-height: 1.6;">{{ question.correct_answer }}</p>
+            </div>
+            {% else %}
+            <div style="background: #f7fafc; padding: 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <p style="color: #808080; font-style: italic; font-size: 14px;">
+                    This is a practice question - no correct answer is stored
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Navigation buttons -->
+<div style="position: sticky; bottom: 10px; background: white; padding: 12px 16px; margin-top: 20px;
+            border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); 
+            display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    
+    {% if question_number > 1 %}
+    <a href="{{ url_for('review_question', attempt_id=attempt.id, question_number=question_number - 1) }}" 
+       class="btn btn-secondary btn-lg">
+        ← Previous
+    </a>
+    {% else %}
+    <span></span>
+    {% endif %}
+    
+    <a href="{{ url_for('review_quiz', attempt_id=attempt.id) }}" class="btn btn-secondary">
+        Summary
+    </a>
+    
+    {% if question_number < total_questions %}
+    <a href="{{ url_for('review_question', attempt_id=attempt.id, question_number=question_number + 1) }}" 
+       class="btn btn-primary btn-lg">
+        Next →
+    </a>
+    {% else %}
+    <a href="{{ url_for('review_quiz', attempt_id=attempt.id) }}" class="btn btn-success btn-lg">
+        Finish Review
+    </a>
+    {% endif %}
+</div>
+
+<script>
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Left Arrow = Previous
+    if (e.key === 'ArrowLeft' && {{ question_number }} > 1) {
+        window.location.href = "{{ url_for('review_question', attempt_id=attempt.id, question_number=question_number - 1) }}";
+    }
+    // Right Arrow = Next
+    if (e.key === 'ArrowRight' && {{ question_number }} < {{ total_questions }}) {
+        window.location.href = "{{ url_for('review_question', attempt_id=attempt.id, question_number=question_number + 1) }}";
+    }
+});
+</script>
+{% endblock %}

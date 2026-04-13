@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Quiz - Test Prep{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px;">
+    <h2 style="margin: 0; font-size: 20px;">✏️ {{ quiz.title }}</h2>
+    <div style="display: flex; gap: 6px;">
+        <a href="{{ url_for('export_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary">
+            📥 Export
+        </a>
+        <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.id) }}" style="display: inline;" 
+              onsubmit="return confirm('Delete this entire quiz? All questions and data will be lost. This cannot be undone.');">
+            <button type="submit" class="btn btn-danger">
+                🗑️ Delete Quiz
+            </button>
+        </form>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 380px; gap: 20px;">
+    <!-- Questions List -->
+    <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 16px; margin: 0; color: #2d3748;">Questions ({{ total_questions }} total)</h3>
+            {% if pagination.pages > 1 %}
+            <p style="font-size: 13px; color: #808080; margin: 0;">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </p>
+            {% endif %}
+        </div>
+        
+        {% if questions %}
+            <div id="questions-list">
+                {% for question in questions %}
+                <div class="card" style="display: flex; gap: 12px; align-items: start;">
+                    <div style="flex-shrink: 0; width: 40px; text-align: center; font-size: 20px; font-weight: bold; color: #000000;">
+                        {{ (pagination.page - 1) * pagination.per_page + loop.index }}
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <img data-src="{{ url_for('static', filename='uploads/' + question.image_path) }}" 
+                             alt="Question {{ loop.index }}"
+                             class="lazy-image"
+                             style="max-width: 100%; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e2e8f0; background: #f7fafc; min-height: 100px;">
+                        {% if question.correct_answer %}
+                        <p style="color: #2a2a2a; font-weight: 600; margin-top: 8px; font-size: 13px;">
+                            ✓ {{ question.correct_answer }}
+                        </p>
+                        {% else %}
+                        <p style="color: #808080; font-style: italic; font-size: 13px;">
+                            No answer (practice)
+                        </p>
+                        {% endif %}
+                    </div>
+                    <form method="POST" action="{{ url_for('delete_question', question_id=question.id) }}" 
+                          onsubmit="return confirm('Delete?');">
+                        <button type="submit" class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;">×</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination Controls -->
+            {% if pagination.pages > 1 %}
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px; flex-wrap: wrap;">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('edit_quiz', quiz_id=quiz.id, page=1) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                    « First
+                </a>
+                <a href="{{ url_for('edit_quiz', quiz_id=quiz.id, page=pagination.prev_num) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                    ‹ Prev
+                </a>
+                {% endif %}
+                
+                <span style="padding: 6px 12px; font-size: 13px; color: #2d3748; font-weight: 600;">
+                    {{ pagination.page }} / {{ pagination.pages }}
+                </span>
+                
+                {% if pagination.has_next %}
+                <a href="{{ url_for('edit_quiz', quiz_id=quiz.id, page=pagination.next_num) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                    Next ›
+                </a>
+                <a href="{{ url_for('edit_quiz', quiz_id=quiz.id, page=pagination.pages) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                    Last »
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <h3>No questions yet</h3>
+                <p>Add your first question using the form →</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Add Question Form -->
+    <div>
+        <div style="position: sticky; top: 10px;">
+            <div class="card" style="background: #f7fafc;">
+                <h3 style="font-size: 16px; margin-bottom: 12px;">Add Question</h3>
+                
+                <form method="POST" action="{{ url_for('add_question', quiz_id=quiz.id) }}" enctype="multipart/form-data" id="addQuestionForm">
+                    <div class="form-group">
+                        <label for="image">Question Image *</label>
+                        <input type="file" id="image" name="image" accept="image/*" required>
+                        <p style="font-size: 11px; color: #808080; margin-top: 4px;">
+                            📎 <strong>Ctrl+V</strong> to paste<br>
+                            PNG, JPG, GIF, WEBP (max 16MB)
+                        </p>
+                        <div id="imagePreview" style="display: none; margin-top: 8px;">
+                            <img id="previewImg" style="max-width: 100%; border-radius: 6px; border: 2px solid #000000;">
+                            <p style="font-size: 11px; color: #2a2a2a; margin-top: 4px;">✓ Ready to add</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="correct_answer">Correct Answer (Optional)</label>
+                        <input type="text" id="correct_answer" name="correct_answer" 
+                               placeholder="Leave blank for practice">
+                        <p style="font-size: 11px; color: #808080; margin-top: 4px;">
+                            Graded if provided
+                        </p>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        Add Question
+                    </button>
+                </form>
+            </div>
+            
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="width: 100%; margin-top: 8px; text-align: center; display: block;">
+                ← Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@media (max-width: 1200px) {
+    div[style*="grid-template-columns: 1fr 380px"] {
+        display: block !important;
+    }
+    div[style*="position: sticky"] {
+        position: static !important;
+    }
+}
+</style>
+
+<script>
+// Handle clipboard paste for images
+document.addEventListener('paste', function(e) {
+    const items = e.clipboardData.items;
+    
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            e.preventDefault();
+            
+            const blob = items[i].getAsFile();
+            const fileInput = document.getElementById('image');
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            // Create a new FileList with the pasted image
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(blob);
+            fileInput.files = dataTransfer.files;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                previewImg.src = event.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(blob);
+            
+            // Focus on the correct answer field for convenience
+            document.getElementById('correct_answer').focus();
+            
+            break;
+        }
+    }
+});
+
+// Also handle file selection to show preview
+document.getElementById('image').addEventListener('change', function(e) {
+    if (e.target.files && e.target.files[0]) {
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            previewImg.src = event.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    }
+});
+
+// Reset preview when form is submitted
+document.getElementById('addQuestionForm').addEventListener('submit', function() {
+    setTimeout(function() {
+        document.getElementById('imagePreview').style.display = 'none';
+        document.getElementById('correct_answer').value = '';
+    }, 100);
+});
+
+// Lazy loading for question images
+document.addEventListener('DOMContentLoaded', function() {
+    const lazyImages = document.querySelectorAll('.lazy-image');
+    
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver(function(entries, observer) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy-image');
+                    img.classList.add('loaded');
+                    imageObserver.unobserve(img);
+                }
+            });
+        }, {
+            rootMargin: '50px' // Start loading 50px before image enters viewport
+        });
+        
+        lazyImages.forEach(function(img) {
+            imageObserver.observe(img);
+        });
+    } else {
+        // Fallback for browsers without IntersectionObserver
+        lazyImages.forEach(function(img) {
+            img.src = img.dataset.src;
+        });
+    }
+});
+</script>
+{% endblock %}

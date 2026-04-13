@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Import Quiz - Test Prep{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <h2 style="margin-bottom: 12px;">📥 Import Quiz</h2>
+    <p style="color: #808080; margin-bottom: 20px; font-size: 14px;">
+        Upload a quiz backup file (.zip) to restore a previously exported quiz.
+    </p>
+    
+    <div class="card" style="background: #f7fafc;">
+        <form method="POST" action="{{ url_for('import_quiz') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="quiz_file">Select Quiz Backup File *</label>
+                <input type="file" id="quiz_file" name="quiz_file" accept=".zip" required>
+                <p style="font-size: 14px; color: #808080; margin-top: 8px;">
+                    Only ZIP files exported from this app are supported
+                </p>
+            </div>
+            
+            <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #000000;">
+                <h4 style="margin-bottom: 10px; color: #2d3748; font-size: 15px;">ℹ️ How It Works</h4>
+                <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px; font-size: 14px;">
+                    <li>The imported quiz will be added as a new quiz</li>
+                    <li>Title will have "(Imported)" appended</li>
+                    <li>All questions and images will be restored</li>
+                    <li>You can edit the quiz after import</li>
+                    <li>Previous quiz attempts are not included</li>
+                </ul>
+            </div>
+            
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">
+                    📥 Import Quiz
+                </button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <div style="margin-top: 30px; padding: 16px; background: #fffbeb; border-radius: 8px; border: 1px solid #fbbf24;">
+        <h4 style="color: #92400e; margin-bottom: 10px; font-size: 15px;">💡 Export Options</h4>
+        <p style="color: #78350f; margin-bottom: 10px; font-size: 14px;">You can export quizzes in two ways:</p>
+        <ul style="color: #78350f; line-height: 1.6; padding-left: 20px; font-size: 14px;">
+            <li><strong>Single Quiz:</strong> Click the 📥 button on any quiz card</li>
+            <li><strong>All Quizzes:</strong> Click "📦 Export All" button</li>
+        </ul>
+        <p style="color: #78350f; margin-top: 10px; font-size: 13px;">
+            Exported files contain all questions, images, and correct answers in a portable ZIP format.
+        </p>
+    </div>
+</div>
+{% endblock %}
